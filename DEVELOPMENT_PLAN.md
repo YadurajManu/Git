@@ -64,31 +64,31 @@ This document serves as the single source of truth for the development lifecycle
 
 ---
 
-## Phase 2 — Backend Core & Database Setup
+## Phase 2 — Backend Core & Firebase Setup
 
-**Status:** 🛑 Not Started  
+**Status:** ✅ Completed
 **Estimated Time:** ~6 hours
 
 ### Objectives
 
-- Scaffold backend server.
-- specific database connection and migration system.
-- Implement basic health checks.
+- Scaffold backend server (Express).
+- Configure Firebase Admin SDK for server-side access.
+- Configure Firebase JS SDK for client-side access.
+- Implement basic structure for Controllers/Services.
 
 ### Tasks
 
-- [ ] Initialize Node.js/Express (TypeScript) project
-- [ ] Setup PostgreSQL database (local/docker)
-- [ ] Configure ORM (Prisma/TypeORM/Drizzle)
-- [ ] Create initial migrations from Schema (Phase 0)
-- [ ] Implement /health endpoint
-- [ ] Setup Logger (Winston/Pino)
+- [x] Initialize Node.js/Express (TypeScript) project
+- [x] Install `firebase-admin` and `firebase`
+- [x] Create `src/config/firebase.ts` (Admin SDK setup)
+- [x] Create `src/config/firebase-client.ts` (Client SDK setup)
+- [x] Implement /health endpoint
+- [x] Setup Logger (Winston/Pino)
 
 ### Testing
 
-- [ ] Unit test: Health endpoint returns 200 OK
-- [ ] Integration test: Can connect to DB and run migrations
-- [ ] Manual: Check logs output format
+- [x] Unit test: Health endpoint returns 200 OK
+- [x] Manual: Check logs output format
 
 ### Commit Template
 

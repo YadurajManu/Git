@@ -44,12 +44,14 @@
     ]
   },
   "dependencies": {
+    "@octokit/webhooks-methods": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "firebase": "^12.7.0",
     "firebase-admin": "^13.6.0",
     "helmet": "^8.1.0",
+    "octokit": "^5.0.5",
     "winston": "^3.19.0"
   }
 }
