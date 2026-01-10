@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { handleWebhook } from '../controllers/webhooks.controller';
-import { verifyWebhookSignature } from '../middleware/webhook-verify';
+import { handleWebhook } from '../controllers/webhooks.controller.js';
+import { verifyWebhookSignature } from '../middleware/webhook-verify.js';
 
 const router = Router();
 

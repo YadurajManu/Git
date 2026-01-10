@@ -1,5 +1,4 @@
-import express, { Request, Response, NextFunction } from 'express';
-// @ts-expect-error - types might be missing or conflict with verify options in express
+import express, { type Request, type Response, type NextFunction } from 'express';
 import { verify } from '@octokit/webhooks-methods';
 
 const WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || 'development-secret';

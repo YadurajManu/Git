@@ -1,9 +1,9 @@
-import express, { Request, Response } from 'express';
+import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import webhookRoutes from './routes/webhooks.routes';
-import { captureRawBody } from './middleware/webhook-verify';
+import webhookRoutes from './routes/webhooks.routes.js';
+import { captureRawBody } from './middleware/webhook-verify.js';
 
 dotenv.config();
 
