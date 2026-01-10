@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Layout } from './components/layout/Layout';
 import { LoginPage } from './pages/LoginPage';
 import { AuthProvider, useAuth } from './services/auth.service';
 import { workflowsApi } from './services/api';
 import { socketService } from './services/socket';
+import { PipelineGraph } from './components/visualization/PipelineGraph';
 import {
   GitBranch,
   User as UserIcon,
@@ -13,12 +14,15 @@ import {
   XCircle,
   Loader2,
   Terminal,
+  ArrowLeft,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const queryClient = new QueryClient();
 
 function Dashboard() {
+  const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
+
   const {
     data: workflows,
     isLoading,
@@ -26,7 +30,13 @@ function Dashboard() {
   } = useQuery({
     queryKey: ['workflows'],
     queryFn: workflowsApi.list,
-    refetchInterval: 30000, // Fallback polling
+    refetchInterval: 10000,
+  });
+
+  const { data: workflowDetails, isLoading: isLoadingDetails } = useQuery({
+    queryKey: ['workflow', selectedWorkflowId],
+    queryFn: () => (selectedWorkflowId ? workflowsApi.getDetails(selectedWorkflowId) : null),
+    enabled: !!selectedWorkflowId,
   });
 
   useEffect(() => {
@@ -41,6 +51,81 @@ function Dashboard() {
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (selectedWorkflowId && workflowDetails) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setSelectedWorkflowId(null)}
+            className="p-2 hover:bg-white/5 rounded-lg border border-white/10 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h2 className="text-2xl font-bold">
+              {workflowDetails.display_title || workflowDetails.name}
+            </h2>
+            <p className="text-foreground/40 text-sm">
+              #{workflowDetails.run_number} • {workflowDetails.head_branch}
+            </p>
+          </div>
+        </div>
+
+        {isLoadingDetails ? (
+          <div className="flex items-center justify-center h-[400px]">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <PipelineGraph jobs={workflowDetails.jobs || []} />
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="glass-card">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-primary mb-4">
+              Run Details
+            </h3>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-foreground/40">Event</span>
+                <span className="font-mono text-xs">{workflowDetails.event}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-foreground/40">Actor</span>
+                <span className="text-sm font-medium">{workflowDetails.actor}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-foreground/40">Repository</span>
+                <span className="text-sm">{workflowDetails.repo}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-card">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-secondary mb-4">
+              Conclusion
+            </h3>
+            <div
+              className={`p-4 rounded-xl border ${
+                workflowDetails.conclusion === 'success'
+                  ? 'bg-secondary/10 border-secondary/20 text-secondary'
+                  : workflowDetails.conclusion === 'failure'
+                    ? 'bg-red-500/10 border-red-500/20 text-red-500'
+                    : 'bg-primary/10 border-primary/20 text-primary'
+              }`}
+            >
+              <p className="text-lg font-bold capitalize">
+                {workflowDetails.conclusion || workflowDetails.status}
+              </p>
+              <p className="text-xs opacity-60 mt-1">
+                Updated at {new Date(workflowDetails.updated_at).toLocaleTimeString()}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -63,7 +148,8 @@ function Dashboard() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
               key={workflow.id}
-              className="glass-card hover:border-primary/30 group"
+              onClick={() => setSelectedWorkflowId(workflow.id)}
+              className="glass-card hover:border-primary/30 group cursor-pointer"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-6">
