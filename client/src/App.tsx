@@ -1,11 +1,14 @@
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import { LoginPage } from './pages/LoginPage';
 import { AuthProvider, useAuth } from './services/auth.service';
 import { workflowsApi } from './services/api';
 import { socketService } from './services/socket';
 import { PipelineGraph } from './components/visualization/PipelineGraph';
+import { StatsGrid } from './components/dashboard/StatsGrid';
+import { ActivityPage } from './pages/ActivityPage';
 import {
   GitBranch,
   User as UserIcon,
@@ -15,6 +18,7 @@ import {
   Loader2,
   Terminal,
   ArrowLeft,
+  Search,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -22,6 +26,7 @@ const queryClient = new QueryClient();
 
 function Dashboard() {
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const {
     data: workflows,
@@ -31,6 +36,12 @@ function Dashboard() {
     queryKey: ['workflows'],
     queryFn: workflowsApi.list,
     refetchInterval: 10000,
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ['stats'],
+    queryFn: workflowsApi.getStats,
+    refetchInterval: 30000,
   });
 
   const { data: workflowDetails, isLoading: isLoadingDetails } = useQuery({
@@ -43,9 +54,17 @@ function Dashboard() {
     socketService.connect();
     socketService.on('workflow_update', () => {
       refetch();
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
     });
     return () => socketService.disconnect();
   }, [refetch]);
+
+  const filteredWorkflows = workflows?.filter(
+    (w: any) =>
+      w.display_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      w.head_branch?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      w.actor?.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   if (isLoading) {
     return (
@@ -131,103 +150,103 @@ function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Pipeline Overview</h2>
-          <p className="text-foreground/40 text-sm">Monitor your GitHub Actions in real-time</p>
+    <div className="space-y-8">
+      {stats && <StatsGrid stats={stats} />}
+
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Pipeline Overview</h2>
+            <p className="text-foreground/40 text-sm">Monitor your GitHub Actions in real-time</p>
+          </div>
+          <div className="relative w-64 group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40 group-focus-within:text-primary transition-colors" />
+            <input
+              type="text"
+              placeholder="Filter by branch, user..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-xl py-2 pl-10 pr-4 outline-none focus:border-primary/50 focus:bg-white/10 transition-all text-xs"
+            />
+          </div>
         </div>
-      </div>
 
-      <div className="grid gap-4">
-        <AnimatePresence mode="popLayout">
-          {workflows?.map((workflow: any) => (
-            <motion.div
-              layout
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              key={workflow.id}
-              onClick={() => setSelectedWorkflowId(workflow.id)}
-              className="glass-card hover:border-primary/30 group cursor-pointer"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-6">
-                  <div
-                    className={`p-4 rounded-2xl shadow-inner ${
-                      workflow.conclusion === 'success'
-                        ? 'bg-secondary/10 text-secondary border border-secondary/20'
-                        : workflow.conclusion === 'failure'
-                          ? 'bg-red-500/10 text-red-500 border border-red-500/20'
-                          : 'bg-primary/10 text-primary border border-primary/20 animate-pulse'
-                    }`}
-                  >
-                    {workflow.conclusion === 'success' ? (
-                      <CheckCircle2 className="w-7 h-7" />
-                    ) : workflow.conclusion === 'failure' ? (
-                      <XCircle className="w-7 h-7" />
-                    ) : (
-                      <GitBranch className="w-7 h-7" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xl group-hover:text-primary transition-colors">
-                      {workflow.display_title || workflow.name}
-                    </h3>
-                    <div className="flex items-center space-x-4 text-xs text-foreground/40 mt-2 font-medium">
-                      <span className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/5">
-                        <UserIcon className="w-3.5 h-3.5 text-primary/60" />
-                        <span>{workflow.actor}</span>
-                      </span>
-                      <span className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/5 font-mono">
-                        <GitBranch className="w-3.5 h-3.5 text-accent/60" />
-                        <span>{workflow.head_branch}</span>
-                      </span>
-                      <span className="flex items-center space-x-1.5">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{new Date(workflow.created_at).toLocaleString()}</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-8">
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-foreground/30 font-bold mb-1.5">
-                      Status
-                    </p>
-                    <span
-                      className={`text-xs font-bold px-4 py-1.5 rounded-full border shadow-sm ${
-                        workflow.status === 'completed'
-                          ? 'bg-white/5 text-foreground/60 border-white/10'
-                          : 'bg-primary/20 text-primary border-primary/30 animate-pulse'
+        <div className="grid gap-4">
+          <AnimatePresence mode="popLayout">
+            {filteredWorkflows?.map((workflow: any) => (
+              <motion.div
+                layout
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                key={workflow.id}
+                onClick={() => setSelectedWorkflowId(workflow.id)}
+                className="glass-card hover:border-primary/30 group cursor-pointer"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-6">
+                    <div
+                      className={`p-4 rounded-2xl shadow-inner ${
+                        workflow.conclusion === 'success'
+                          ? 'bg-secondary/10 text-secondary border border-secondary/20'
+                          : workflow.conclusion === 'failure'
+                            ? 'bg-red-500/10 text-red-500 border border-red-500/20'
+                            : 'bg-primary/10 text-primary border border-primary/20 animate-pulse'
                       }`}
                     >
-                      {workflow.status.toUpperCase()}
-                    </span>
+                      {workflow.conclusion === 'success' ? (
+                        <CheckCircle2 className="w-7 h-7" />
+                      ) : workflow.conclusion === 'failure' ? (
+                        <XCircle className="w-7 h-7" />
+                      ) : (
+                        <GitBranch className="w-7 h-7" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-xl group-hover:text-primary transition-colors">
+                        {workflow.display_title || workflow.name}
+                      </h3>
+                      <div className="flex items-center space-x-4 text-xs text-foreground/40 mt-2 font-medium">
+                        <span className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/5">
+                          <UserIcon className="w-3.5 h-3.5 text-primary/60" />
+                          <span>{workflow.actor}</span>
+                        </span>
+                        <span className="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/5 font-mono">
+                          <GitBranch className="w-3.5 h-3.5 text-accent/60" />
+                          <span>{workflow.head_branch}</span>
+                        </span>
+                        <span className="flex items-center space-x-1.5">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{new Date(workflow.created_at).toLocaleString()}</span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <button className="p-3 hover:bg-white/5 rounded-xl transition-all border border-transparent hover:border-white/10 active:scale-90 group-hover:bg-primary/5 group-hover:border-primary/20">
-                    <Terminal className="w-5 h-5 group-hover:text-primary" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
 
-        {workflows?.length === 0 && (
-          <div className="glass-card flex flex-col items-center justify-center p-20 text-center space-y-4 border-dashed opacity-60">
-            <div className="p-4 rounded-full bg-white/5">
-              <GitBranch className="w-10 h-10 text-foreground/20" />
-            </div>
-            <div>
-              <p className="font-semibold text-lg text-foreground/40">No build activity detected</p>
-              <p className="text-sm text-foreground/20">
-                Trigger a GitHub Action to see real-time updates here.
-              </p>
-            </div>
-          </div>
-        )}
+                  <div className="flex items-center space-x-8">
+                    <div className="text-right">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-foreground/30 font-bold mb-1.5">
+                        Status
+                      </p>
+                      <span
+                        className={`text-xs font-bold px-4 py-1.5 rounded-full border shadow-sm ${
+                          workflow.status === 'completed'
+                            ? 'bg-white/5 text-foreground/60 border-white/10'
+                            : 'bg-primary/20 text-primary border-primary/30 animate-pulse'
+                        }`}
+                      >
+                        {workflow.status.toUpperCase()}
+                      </span>
+                    </div>
+                    <button className="p-3 hover:bg-white/5 rounded-xl transition-all border border-transparent hover:border-white/10 active:scale-90 group-hover:bg-primary/5 group-hover:border-primary/20">
+                      <Terminal className="w-5 h-5 group-hover:text-primary" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
@@ -250,7 +269,18 @@ function AuthorizedApp() {
 
   return (
     <Layout>
-      <Dashboard />
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/activity" element={<ActivityPage />} />
+        <Route
+          path="/history"
+          element={<div className="p-8 text-center opacity-40">History view coming soon...</div>}
+        />
+        <Route
+          path="/settings"
+          element={<div className="p-8 text-center opacity-40">Settings flow coming soon...</div>}
+        />
+      </Routes>
     </Layout>
   );
 }
@@ -258,9 +288,11 @@ function AuthorizedApp() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AuthorizedApp />
-      </AuthProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <AuthorizedApp />
+        </AuthProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }

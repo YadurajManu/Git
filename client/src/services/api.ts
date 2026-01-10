@@ -23,6 +23,7 @@ api.interceptors.request.use(
 export const workflowsApi = {
   list: () => api.get('/workflows').then((res) => res.data),
   getDetails: (id: string) => api.get(`/workflows/${id}`).then((res) => res.data),
+  getStats: () => api.get('/stats').then((res) => res.data),
 };
 
 export default api;

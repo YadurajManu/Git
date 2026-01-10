@@ -1,14 +1,14 @@
 import React from 'react';
-import { LayoutDashboard, GitBranch, Settings, History, Activity } from 'lucide-react';
+import { LayoutDashboard, Settings, History, Activity } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../services/auth.service';
+import { NavLink } from 'react-router-dom';
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', active: true },
-  { icon: GitBranch, label: 'Workflows', active: false },
-  { icon: Activity, label: 'Activity', active: false },
-  { icon: History, label: 'History', active: false },
-  { icon: Settings, label: 'Settings', active: false },
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+  { icon: Activity, label: 'Activity', path: '/activity' },
+  { icon: History, label: 'History', path: '/history' },
+  { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -23,23 +23,30 @@ export const Sidebar: React.FC = () => {
 
       <nav className="flex-1 px-4 space-y-2">
         {navItems.map((item) => (
-          <button
+          <NavLink
             key={item.label}
-            className={cn(
-              'w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group',
-              item.active
-                ? 'bg-primary/10 text-primary border border-primary/20 shadow-lg shadow-primary/5'
-                : 'text-foreground/60 hover:text-foreground hover:bg-white/5',
-            )}
+            to={item.path}
+            className={({ isActive }) =>
+              cn(
+                'w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group',
+                isActive
+                  ? 'bg-primary/10 text-primary border border-primary/20 shadow-lg shadow-primary/5'
+                  : 'text-foreground/60 hover:text-foreground hover:bg-white/5',
+              )
+            }
           >
-            <item.icon
-              className={cn(
-                'w-5 h-5',
-                item.active ? 'text-primary' : 'group-hover:scale-110 transition-transform',
-              )}
-            />
-            <span className="font-medium">{item.label}</span>
-          </button>
+            {({ isActive }) => (
+              <>
+                <item.icon
+                  className={cn(
+                    'w-5 h-5',
+                    isActive ? 'text-primary' : 'group-hover:scale-110 transition-transform',
+                  )}
+                />
+                <span className="font-medium">{item.label}</span>
+              </>
+            )}
+          </NavLink>
         ))}
       </nav>
 
