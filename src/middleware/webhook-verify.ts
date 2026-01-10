@@ -5,7 +5,8 @@ const WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || 'development-secret'
 
 // Middleware to capture the raw body for signature verification
 export const captureRawBody = express.json({
-  verify: (req: any, res, buf) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  verify: (req: any, _res, buf) => {
     req.rawBody = buf;
   },
 });
@@ -15,7 +16,8 @@ export const verifyWebhookSignature = async (req: Request, res: Response, next: 
   const id = req.headers['x-github-delivery'] as string;
   const event = req.headers['x-github-event'] as string;
 
-  const rawBody = (req as any).rawBody;
+  const rawBody = (req as Request & { rawBody?: Buffer }).rawBody;
+  const payloadStr = typeof rawBody === 'string' ? rawBody : JSON.stringify(req.body);
 
   if (!signature) {
     // eslint-disable-next-line no-console
@@ -30,7 +32,7 @@ export const verifyWebhookSignature = async (req: Request, res: Response, next: 
   }
 
   try {
-    const isValid = await verify(WEBHOOK_SECRET, rawBody, signature);
+    const isValid = await verify(WEBHOOK_SECRET, payloadStr, signature);
 
     if (!isValid) {
       // eslint-disable-next-line no-console

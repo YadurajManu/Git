@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import webhookRoutes from './routes/webhooks.routes.js';
+import workflowRoutes from './routes/workflows.routes.js';
 import { captureRawBody } from './middleware/webhook-verify.js';
 
 dotenv.config();
@@ -28,6 +29,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 // Routes
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/workflows', workflowRoutes);
 
 // Placeholder for future routes
 app.get('/', (req: Request, res: Response) => {

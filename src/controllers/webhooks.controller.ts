@@ -1,4 +1,6 @@
 import type { Request, Response } from 'express';
+import { handleWorkflowRun, handleWorkflowJob } from '../services/ingestion.service.js';
+import type { WorkflowRunEvent, WorkflowJobEvent } from '../types/github.js';
 
 export const handleWebhook = async (req: Request, res: Response) => {
   const event = req.headers['x-github-event'] as string;
@@ -14,8 +16,18 @@ export const handleWebhook = async (req: Request, res: Response) => {
     return res.status(200).send('PONG');
   }
 
-  // Placeholder for future event handling
-  // TODO: Add Phase 4 ingestion logic here
+  // Phase 4: Async Ingestion
+  if (event === 'workflow_run') {
+    handleWorkflowRun(payload as WorkflowRunEvent).catch((err) => {
+      // eslint-disable-next-line no-console
+      console.error('Error handling workflow_run:', err);
+    });
+  } else if (event === 'workflow_job') {
+    handleWorkflowJob(payload as WorkflowJobEvent).catch((err) => {
+      // eslint-disable-next-line no-console
+      console.error('Error handling workflow_job:', err);
+    });
+  }
 
   res.status(202).send('Accepted');
 };
