@@ -220,7 +220,7 @@ This document serves as the single source of truth for the development lifecycle
 
 ## Phase 7 — Frontend Core & Design System
 
-**Status:** 🛑 Not Started  
+**Status:** ✅ Completed
 **Estimated Time:** ~6 hours
 
 ### Objectives
@@ -230,18 +230,18 @@ This document serves as the single source of truth for the development lifecycle
 
 ### Tasks
 
-- [ ] Initialize Vite + React + TypeScript project
-- [ ] Setup Tailwind CSS
-- [ ] Configure Routing (React Router)
-- [ ] Create basic Layout (Sidebar, Header, Main)
-- [ ] Build core UI components (Button, Card, Badge, Spinner)
-- [ ] Setup API Client (Axios/TanStack Query)
+- [x] Initialize Vite + React + TypeScript project
+- [x] Setup Tailwind CSS
+- [x] Configure Routing (React Router)
+- [x] Create basic Layout (Sidebar, Header, Main)
+- [x] Build core UI components (Button, Card, Badge, Spinner)
+- [x] Setup API Client (Axios/TanStack Query)
 
 ### Testing
 
-- [ ] Unit tests: Basic component rendering
-- [ ] Manual: Check responsive layout and theme application
-- [ ] Verify build passes
+- [x] Unit tests: Basic component rendering
+- [x] Manual: Check responsive layout and theme application
+- [x] Verify build passes
 
 ### Commit Template
 
@@ -310,7 +310,7 @@ This document serves as the single source of truth for the development lifecycle
 
 ## Phase 10 — Authentication & Security
 
-**Status:** 🛑 Not Started  
+**Status:** ✅ Completed
 **Estimated Time:** ~5 hours
 
 ### Objectives
@@ -320,17 +320,17 @@ This document serves as the single source of truth for the development lifecycle
 
 ### Tasks
 
-- [ ] Implement basic Auth (Login/Logout) or API Key auth
-- [ ] Secure Backend Routes (Middleware)
-- [ ] Secure Frontend Routes (Protected Route wrapper)
-- [ ] Implement Rate Limiting on API
-- [ ] Audit dependencies for vulnerabilities
+- [x] Implement basic Auth (Login/Logout) or API Key auth
+- [x] Secure Backend Routes (Middleware)
+- [x] Secure Frontend Routes (Protected Route wrapper)
+- [x] Implement Rate Limiting on API (Basic)
+- [x] Audit dependencies for vulnerabilities
 
 ### Testing
 
-- [ ] Unit test: Auth middleware
-- [ ] Integration: Unauth request returns 401/403
-- [ ] Manual: Try to bypass login
+- [x] Unit test: Auth middleware
+- [x] Integration: Unauth request returns 401/403
+- [x] Manual: Try to bypass login
 
 ### Commit Template
 
