@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { getWorkflows, getWorkflowDetails } from '../controllers/workflows.controller.js';
+import {
+  getWorkflows,
+  getWorkflowDetails,
+  getRepositories,
+} from '../controllers/workflows.controller.js';
 import { verifyAuth } from '../middleware/auth.middleware.js';
 
 const router = Router();
@@ -9,6 +13,9 @@ router.use(verifyAuth);
 
 // GET /api/workflows
 router.get('/', getWorkflows);
+
+// GET /api/workflows/repositories
+router.get('/repositories', getRepositories);
 
 // GET /api/workflows/:id
 router.get('/:id', getWorkflowDetails);

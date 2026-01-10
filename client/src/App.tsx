@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useParams, useNavigate } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import { LoginPage } from './pages/LoginPage';
 import { AuthProvider, useAuth } from './services/auth.service';
@@ -9,6 +9,7 @@ import { socketService } from './services/socket';
 import { PipelineGraph } from './components/visualization/PipelineGraph';
 import { StatsGrid } from './components/dashboard/StatsGrid';
 import { ActivityPage } from './pages/ActivityPage';
+import { RepositoriesPage } from './pages/RepositoriesPage';
 import {
   GitBranch,
   User as UserIcon,
@@ -25,6 +26,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 const queryClient = new QueryClient();
 
 function Dashboard() {
+  const { repoName } = useParams<{ repoName?: string }>();
+  const navigate = useNavigate();
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -33,8 +36,8 @@ function Dashboard() {
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ['workflows'],
-    queryFn: workflowsApi.list,
+    queryKey: ['workflows', repoName],
+    queryFn: () => workflowsApi.list(repoName),
     refetchInterval: 10000,
   });
 
@@ -52,12 +55,16 @@ function Dashboard() {
 
   useEffect(() => {
     socketService.connect();
-    socketService.on('workflow_update', () => {
-      refetch();
+    socketService.on('workflow_update', (data) => {
+      // Refresh workflows if the update belongs to the current view or no repo is selected
+      if (!repoName || data.repoName === repoName) {
+        refetch();
+      }
       queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['repositories'] });
     });
     return () => socketService.disconnect();
-  }, [refetch]);
+  }, [refetch, repoName]);
 
   const filteredWorkflows = workflows?.filter(
     (w: any) =>
@@ -118,7 +125,7 @@ function Dashboard() {
               </div>
               <div className="flex justify-between">
                 <span className="text-foreground/40">Repository</span>
-                <span className="text-sm">{workflowDetails.repo}</span>
+                <span className="text-sm">{workflowDetails.repoName}</span>
               </div>
             </div>
           </div>
@@ -151,13 +158,27 @@ function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {stats && <StatsGrid stats={stats} />}
+      {!repoName && stats && <StatsGrid stats={stats} />}
 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">Pipeline Overview</h2>
-            <p className="text-foreground/40 text-sm">Monitor your GitHub Actions in real-time</p>
+          <div className="flex items-center space-x-4">
+            {repoName && (
+              <button
+                onClick={() => navigate('/')}
+                className="p-2 hover:bg-white/5 rounded-lg border border-white/10 transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            )}
+            <div>
+              <h2 className="text-2xl font-bold">
+                {repoName ? repoName.split('/')[1] : 'Recent Pipeline Activity'}
+              </h2>
+              <p className="text-foreground/40 text-sm">
+                {repoName ? repoName : 'Monitor all integrated GitHub Actions'}
+              </p>
+            </div>
           </div>
           <div className="relative w-64 group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40 group-focus-within:text-primary transition-colors" />
@@ -246,6 +267,11 @@ function Dashboard() {
               </motion.div>
             ))}
           </AnimatePresence>
+          {filteredWorkflows?.length === 0 && (
+            <div className="glass-card py-20 text-center opacity-40 italic">
+              No build activity found for {repoName || 'this view'}.
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -270,12 +296,11 @@ function AuthorizedApp() {
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<RepositoriesPage />} />
+        <Route path="/repo/:repoName" element={<Dashboard />} />
         <Route path="/activity" element={<ActivityPage />} />
-        <Route
-          path="/history"
-          element={<div className="p-8 text-center opacity-40">History view coming soon...</div>}
-        />
+        <Route path="/history" element={<Dashboard />} />{' '}
+        {/* Use dashboard as recent activity view */}
         <Route
           path="/settings"
           element={<div className="p-8 text-center opacity-40">Settings flow coming soon...</div>}

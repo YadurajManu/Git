@@ -281,7 +281,7 @@ This document serves as the single source of truth for the development lifecycle
 
 ## Phase 9 — Dashboard & Activity View
 
-**Status:** 🛑 Not Started  
+**Status:** ✅ Completed
 **Estimated Time:** ~6 hours
 
 ### Objectives
@@ -291,11 +291,11 @@ This document serves as the single source of truth for the development lifecycle
 
 ### Tasks
 
-- [ ] Implement Dashboard Page (Recent Runs)
-- [ ] Implement Run Detail Page (Container for Graph)
-- [ ] Integrate WebSocket client in frontend
-- [ ] Live update status icons/bars without refresh
-- [ ] Add Search and Filter capabilities
+- [x] Implement Dashboard Page (Recent Runs)
+- [x] Implement Run Detail Page (Container for Graph)
+- [x] Integrate WebSocket client in frontend
+- [x] Live update status icons/bars without refresh
+- [x] Add Search and Filter capabilities
 
 ### Testing
 

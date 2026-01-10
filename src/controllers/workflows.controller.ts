@@ -3,15 +3,51 @@ import { db } from '../config/firebase.js';
 
 const COLLECTION_BUILDS = 'builds';
 
+export const getRepositories = async (_req: Request, res: Response) => {
+  try {
+    const snapshots = await db.collection(COLLECTION_BUILDS).orderBy('updated_at', 'desc').get();
+
+    const reposMap = new Map();
+
+    snapshots.forEach((doc) => {
+      const data = doc.data();
+      const repoName = data.repoName;
+      if (!repoName) return;
+
+      if (!reposMap.has(repoName)) {
+        reposMap.set(repoName, {
+          name: repoName,
+          last_build: data.conclusion || data.status,
+          updated_at: data.updated_at,
+          build_count: 1,
+        });
+      } else {
+        const existing = reposMap.get(repoName);
+        existing.build_count++;
+        // Summary: we already ordered by updated_at desc, so the first one we encounter is the latest
+      }
+    });
+
+    res.json(Array.from(reposMap.values()));
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Error fetching repositories:', error);
+    res.status(500).json({ error: 'Failed to fetch repositories' });
+  }
+};
+
 export const getWorkflows = async (req: Request, res: Response) => {
   try {
-    const snapshots = await db
-      .collection(COLLECTION_BUILDS)
-      .orderBy('created_at', 'desc')
-      .limit(50)
-      .get();
+    const { repo } = req.query;
+    let query: any = db.collection(COLLECTION_BUILDS).orderBy('updated_at', 'desc');
 
-    const workflows = snapshots.docs.map((doc) => ({
+    if (repo) {
+      query = query.where('repoName', '==', repo);
+    }
+
+    const snapshot = await query.limit(50).get();
+
+    const workflows = snapshot.docs.map((doc: any) => ({
       id: doc.id,
       ...doc.data(),
     }));
