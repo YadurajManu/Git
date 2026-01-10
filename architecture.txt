@@ -1,0 +1,708 @@
+# CI/CD Pipeline Visualizer - Complete Architecture (Firebase Edition)
+
+## 🎨 Frontend Architecture
+
+### Core Technologies
+- **Framework**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **State Management**: Redux Toolkit + React Query
+- **Routing**: React Router v6
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Charts**: Recharts + D3.js
+- **Animations**: Framer Motion
+- **WebSocket**: Socket.io-client
+- **HTTP Client**: Axios
+- **Firebase SDK**: Firebase JS SDK v10+
+
+### Page Structure
+```
+/login                    - GitHub OAuth login via Firebase
+/dashboard                - Overview of all repos
+/repos                    - List of connected repositories
+/repos/:id                - Single repo details
+/repos/:id/builds         - Build history
+/repos/:id/builds/:buildId - Build details & logs
+/repos/:id/deployments    - Deployment history
+/analytics                - Metrics and charts
+/settings                 - User preferences
+/notifications            - Notification center
+```
+
+### Key Components
+```
+components/
+├── auth/
+│   ├── LoginButton.tsx
+│   ├── ProtectedRoute.tsx
+│   ├── AuthCallback.tsx
+│   └── FirebaseAuthProvider.tsx    (NEW)
+├── pipeline/
+│   ├── PipelineVisualizer.tsx    (Main pipeline diagram)
+│   ├── PipelineStage.tsx         (Individual stage)
+│   └── PipelineFlow.tsx          (Animated connections)
+├── builds/
+│   ├── BuildCard.tsx
+│   ├── BuildList.tsx
+│   ├── BuildMatrix.tsx           (Grid view)
+│   └── BuildStatus.tsx
+├── logs/
+│   ├── LogViewer.tsx             (Terminal-style)
+│   ├── LogSearch.tsx
+│   └── LogDownloader.tsx
+├── deployments/
+│   ├── DeploymentTimeline.tsx
+│   ├── DeploymentCard.tsx
+│   └── EnvironmentBadge.tsx
+├── analytics/
+│   ├── SuccessRateChart.tsx
+│   ├── BuildDurationChart.tsx
+│   ├── DeploymentHeatmap.tsx
+│   └── MetricCard.tsx
+├── activity/
+│   ├── ActivityFeed.tsx
+│   ├── ActivityItem.tsx
+│   └── EventFilter.tsx
+├── notifications/
+│   ├── NotificationCenter.tsx
+│   ├── NotificationBell.tsx
+│   └── NotificationItem.tsx
+└── shared/
+    ├── Header.tsx
+    ├── Sidebar.tsx
+    ├── LoadingSpinner.tsx
+    └── ErrorBoundary.tsx
+```
+
+### State Management
+
+**Redux Store**
+```typescript
+store/
+├── slices/
+│   ├── authSlice.ts          // User from Firebase Auth
+│   ├── reposSlice.ts         // Connected repos
+│   ├── buildsSlice.ts        // Build data
+│   ├── deploymentsSlice.ts   // Deployment data
+│   ├── notificationsSlice.ts // Notifications
+│   └── uiSlice.ts            // Theme, sidebar state
+└── store.ts
+```
+
+**Firebase Hooks (Custom)**
+```typescript
+hooks/
+├── useFirebaseAuth.ts       // Auth state listener
+├── useRepos.ts              // Firestore repos collection
+├── useBuilds.ts             // Firestore builds collection
+├── useBuildLogs.ts          // Fetch logs from Storage
+├── useDeployments.ts        // Firestore deployments
+├── useAnalytics.ts          // Aggregated metrics
+└── useNotifications.ts      // Real-time notifications
+```
+
+**Firebase Context**
+```typescript
+context/
+├── FirebaseContext.tsx      // Firebase app instance
+└── WebSocketContext.tsx     // Real-time updates (optional)
+```
+
+---
+
+## 🖥️ Backend Architecture (Simplified with Firebase)
+
+### Core Technologies
+- **Runtime**: Node.js 20+ (for webhooks & background jobs only)
+- **Framework**: Express.js (lightweight API server)
+- **Language**: TypeScript
+- **Database**: **Cloud Firestore** (NoSQL)
+- **Authentication**: **Firebase Authentication**
+- **Storage**: **Firebase Storage** (for logs, artifacts)
+- **Real-time**: **Firestore Real-time Listeners**
+- **Background Jobs**: **Firebase Cloud Functions** or Bull Queue
+- **Caching**: **Firebase Extensions** or Redis (optional)
+- **Validation**: Zod
+- **Logging**: Winston + Cloud Logging
+
+### Project Structure
+```
+backend/
+├── src/
+│   ├── config/
+│   │   ├── firebase.ts           (Firebase Admin SDK)
+│   │   ├── github.ts
+│   │   └── environment.ts
+│   ├── controllers/
+│   │   ├── webhooks.controller.ts  (GitHub webhooks)
+│   │   ├── sync.controller.ts      (Manual sync)
+│   │   └── integrations.controller.ts (Slack, Discord)
+│   ├── services/
+│   │   ├── github.service.ts       (GitHub API calls)
+│   │   ├── build.service.ts        (Process builds)
+│   │   ├── webhook.service.ts      (Webhook validation)
+│   │   ├── notification.service.ts (Push notifications)
+│   │   └── analytics.service.ts    (Aggregate data)
+│   ├── middleware/
+│   │   ├── auth.middleware.ts      (Verify Firebase token)
+│   │   ├── validation.middleware.ts
+│   │   ├── rateLimit.middleware.ts
+│   │   └── error.middleware.ts
+│   ├── routes/
+│   │   ├── webhooks.routes.ts      (GitHub webhook endpoint)
+│   │   ├── sync.routes.ts          (Manual sync API)
+│   │   └── integrations.routes.ts  (External integrations)
+│   ├── functions/                   (Firebase Cloud Functions)
+│   │   ├── onBuildCreate.ts        (Trigger on new build)
+│   │   ├── onDeploymentCreate.ts   (Trigger on deployment)
+│   │   ├── scheduledSync.ts        (Cron job)
+│   │   └── sendNotification.ts     (Push notifications)
+│   ├── utils/
+│   │   ├── firestore.util.ts
+│   │   ├── storage.util.ts
+│   │   └── validators.ts
+│   └── app.ts
+└── functions/                       (Cloud Functions deployment)
+    └── index.ts
+```
+
+### API Endpoints (Minimal Backend)
+
+**Webhooks (Critical for Real-time Updates)**
+```
+POST   /api/webhooks/github          - Receive GitHub webhooks
+POST   /api/repos/:id/webhooks/setup - Setup webhook for repo
+DELETE /api/repos/:id/webhooks       - Remove webhook
+```
+
+**Manual Sync (Optional - Most data via Firestore)**
+```
+POST   /api/repos/:id/sync           - Force sync with GitHub
+POST   /api/builds/:id/retry         - Trigger build retry
+```
+
+**Integrations**
+```
+POST   /api/integrations/slack       - Setup Slack webhook
+POST   /api/integrations/discord     - Setup Discord webhook
+```
+
+### Firebase Cloud Functions
+
+**Firestore Triggers**
+```typescript
+// Automatically run when new build document created
+exports.onBuildCreate = functions.firestore
+  .document('builds/{buildId}')
+  .onCreate(async (snap, context) => {
+    // Fetch logs from GitHub
+    // Store in Firebase Storage
+    // Update build document
+    // Send notification
+  });
+
+// Trigger on deployment
+exports.onDeploymentCreate = functions.firestore
+  .document('deployments/{deploymentId}')
+  .onCreate(async (snap, context) => {
+    // Send notifications
+    // Update analytics
+  });
+```
+
+**Scheduled Functions (Cron Jobs)**
+```typescript
+// Run every 5 minutes
+exports.scheduledSync = functions.pubsub
+  .schedule('every 5 minutes')
+  .onRun(async (context) => {
+    // Sync active builds
+    // Update build statuses
+  });
+```
+
+**HTTP Functions**
+```typescript
+// Process GitHub webhook
+exports.githubWebhook = functions.https.onRequest(async (req, res) => {
+  // Validate signature
+  // Process event
+  // Update Firestore
+});
+```
+
+---
+
+## 💾 Database Schema (Cloud Firestore)
+
+### Collections Structure
+
+**users** collection
+```typescript
+{
+  uid: string,                    // Firebase Auth UID
+  githubId: number,
+  username: string,
+  email: string,
+  avatarUrl: string,
+  githubAccessToken: string,      // Encrypted
+  githubRefreshToken: string,     // Encrypted
+  settings: {
+    theme: 'dark' | 'light',
+    notifications: boolean,
+    ...
+  },
+  createdAt: Timestamp,
+  updatedAt: Timestamp
+}
+```
+
+**repositories** collection
+```typescript
+{
+  id: string,                     // Auto-generated
+  userId: string,                 // Reference to users
+  githubRepoId: number,
+  name: string,
+  fullName: string,
+  owner: string,
+  defaultBranch: string,
+  isPrivate: boolean,
+  webhookId: number,
+  webhookSecret: string,
+  lastSyncedAt: Timestamp,
+  createdAt: Timestamp,
+  updatedAt: Timestamp
+}
+```
+
+**builds** collection
+```typescript
+{
+  id: string,
+  repoId: string,                 // Reference to repositories
+  userId: string,                 // Reference to users
+  githubRunId: number,
+  workflowName: string,
+  branch: string,
+  commitSha: string,
+  commitMessage: string,
+  commitAuthor: string,
+  commitAuthorAvatar: string,
+  status: 'queued' | 'in_progress' | 'completed' | 'failed' | 'cancelled',
+  conclusion: 'success' | 'failure' | 'cancelled' | 'skipped',
+  startedAt: Timestamp,
+  completedAt: Timestamp,
+  durationSeconds: number,
+  triggeredBy: string,
+  eventType: 'push' | 'pull_request' | 'manual' | 'schedule',
+  jobs: [                         // Sub-collection or array
+    {
+      githubJobId: number,
+      name: string,
+      status: string,
+      startedAt: Timestamp,
+      completedAt: Timestamp,
+      durationSeconds: number,
+      runnerName: string
+    }
+  ],
+  createdAt: Timestamp,
+  updatedAt: Timestamp
+}
+```
+
+**deployments** collection
+```typescript
+{
+  id: string,
+  repoId: string,
+  buildId: string,
+  userId: string,
+  environment: 'development' | 'staging' | 'production',
+  commitSha: string,
+  deployedBy: string,
+  status: 'pending' | 'in_progress' | 'success' | 'failed',
+  deployedAt: Timestamp,
+  createdAt: Timestamp,
+  updatedAt: Timestamp
+}
+```
+
+**logs** collection (metadata only, files in Storage)
+```typescript
+{
+  id: string,
+  buildId: string,
+  jobId: string,
+  storageUrl: string,             // Firebase Storage path
+  logSizeBytes: number,
+  createdAt: Timestamp
+}
+```
+
+**notifications** collection
+```typescript
+{
+  id: string,
+  userId: string,
+  type: 'build_failed' | 'build_success' | 'deployment_success' | 'deployment_failed',
+  title: string,
+  message: string,
+  repoId: string,
+  buildId: string,
+  isRead: boolean,
+  createdAt: Timestamp
+}
+```
+
+**analytics** collection (pre-aggregated for performance)
+```typescript
+{
+  id: string,                     // Date-based: '2025-01-10'
+  userId: string,
+  repoId: string,
+  date: Timestamp,
+  totalBuilds: number,
+  successfulBuilds: number,
+  failedBuilds: number,
+  averageDuration: number,
+  totalDeployments: number,
+  deploymentsByEnv: {
+    development: number,
+    staging: number,
+    production: number
+  }
+}
+```
+
+### Firestore Indexes (Required for Queries)
+```javascript
+// Composite indexes needed:
+// 1. builds: repoId + createdAt (descending)
+// 2. builds: userId + createdAt (descending)
+// 3. deployments: repoId + deployedAt (descending)
+// 4. notifications: userId + isRead + createdAt (descending)
+// 5. analytics: userId + date (descending)
+```
+
+---
+
+## 🔄 Data Flow Examples (Firebase Version)
+
+### 1. User Connects a Repository
+```
+1. User clicks "Connect Repo" → Frontend
+2. Frontend uses Firebase Auth token to call GitHub API directly
+3. User selects repo → Frontend calls Cloud Function
+4. Cloud Function:
+   - Writes to Firestore 'repositories' collection
+   - Creates GitHub webhook
+   - Returns success
+5. Firestore real-time listener updates UI instantly
+6. Background Cloud Function syncs recent builds
+7. Frontend shows connected repo immediately
+```
+
+### 2. New Push to Repository
+```
+1. Developer pushes code to GitHub
+2. GitHub → POST /api/webhooks/github (your webhook endpoint)
+3. Webhook handler validates signature
+4. Handler writes to Firestore 'builds' collection
+5. Firestore triggers 'onBuildCreate' Cloud Function
+6. Cloud Function:
+   - Fetches build logs from GitHub
+   - Stores logs in Firebase Storage
+   - Updates build document with log URL
+7. Firestore real-time listener → Frontend updates instantly
+8. Cloud Function sends notification (Firestore write)
+9. Frontend notification bell lights up
+```
+
+### 3. User Views Build Logs
+```
+1. User clicks on build → Frontend
+2. Frontend reads from Firestore (cached locally)
+3. Build metadata displayed instantly
+4. Frontend requests log file from Firebase Storage
+5. Firebase Storage returns signed URL
+6. Frontend downloads and displays logs
+7. If build still running:
+   - Firestore listener updates status in real-time
+   - Cloud Function appends new log chunks to Storage
+```
+
+### 4. Analytics Dashboard Load
+```
+1. User navigates to /analytics → Frontend
+2. Frontend queries Firestore 'analytics' collection
+3. Pre-aggregated data returned instantly (no computation)
+4. Charts rendered with cached data
+5. Background Cloud Function (cron):
+   - Runs every hour
+   - Aggregates new build/deployment data
+   - Writes to 'analytics' collection
+6. Firestore listener updates dashboard when new data available
+```
+
+---
+
+## 🔐 Security (Firebase Security Rules)
+
+### Firestore Security Rules
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Users can only read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Repositories - users can only access their own
+    match /repositories/{repoId} {
+      allow read, write: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Builds - read if user owns the repo
+    match /builds/{buildId} {
+      allow read: if request.auth != null && 
+        get(/databases/$(database)/documents/repositories/$(resource.data.repoId)).data.userId == request.auth.uid;
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // Deployments - same as builds
+    match /deployments/{deploymentId} {
+      allow read: if request.auth != null && 
+        get(/databases/$(database)/documents/repositories/$(resource.data.repoId)).data.userId == request.auth.uid;
+      allow write: if false;
+    }
+    
+    // Notifications - users can read/update their own
+    match /notifications/{notificationId} {
+      allow read, update: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+      allow create, delete: if false;
+    }
+    
+    // Analytics - users can only read their own
+    match /analytics/{analyticsId} {
+      allow read: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+  }
+}
+```
+
+### Firebase Storage Security Rules
+```javascript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Logs - users can only read logs for their builds
+    match /logs/{userId}/{buildId}/{fileName} {
+      allow read: if request.auth != null && 
+        request.auth.uid == userId;
+      allow write: if false; // Only Cloud Functions
+    }
+    
+    // Artifacts
+    match /artifacts/{userId}/{buildId}/{fileName} {
+      allow read: if request.auth != null && 
+        request.auth.uid == userId;
+      allow write: if false;
+    }
+  }
+}
+```
+
+### Authentication Security
+```typescript
+// Frontend - Firebase Auth initialization
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  GithubAuthProvider, 
+  signInWithPopup,
+  signOut 
+} from 'firebase/auth';
+
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  // ... other config
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GithubAuthProvider();
+provider.addScope('repo');
+provider.addScope('workflow');
+
+// Login
+const signIn = () => signInWithPopup(auth, provider);
+
+// Logout
+const logout = () => signOut(auth);
+```
+
+---
+
+## 📊 Performance Optimizations (Firebase)
+
+1. **Firestore Optimization**
+   - Use composite indexes for common queries
+   - Paginate with `startAfter()` cursor (50 docs/page)
+   - Cache frequently accessed documents locally
+   - Use `onSnapshot()` for real-time updates only where needed
+   - Denormalize data for faster reads (trade-off: more writes)
+
+2. **Firebase Storage Optimization**
+   - Store logs as compressed files (.gz)
+   - Use signed URLs with 1-hour expiration
+   - Implement client-side caching
+   - Lazy-load log files only when viewed
+
+3. **Cloud Functions Optimization**
+   - Use min instances to reduce cold starts
+   - Batch Firestore writes (up to 500 operations)
+   - Use Pub/Sub for async processing
+   - Set appropriate memory limits
+
+4. **Frontend Optimization**
+   - Firebase SDK tree-shaking (import only what you need)
+   - Persist Firestore cache to IndexedDB
+   - Use React Query for additional caching layer
+   - Implement virtual scrolling for large lists
+   - Code splitting per route
+
+5. **Real-time Updates Strategy**
+   - Use Firestore listeners only for active views
+   - Detach listeners when component unmounts
+   - Throttle rapid updates (debounce 500ms)
+   - Use `onSnapshot()` with `includeMetadataChanges: false`
+
+---
+
+## 🚀 Deployment Architecture (Firebase)
+
+```
+┌─────────────────────────────────────────┐
+│         Firebase Hosting                │
+│      (React SPA + PWA)                  │
+└────────────┬────────────────────────────┘
+             │
+             ├──────────────┬──────────────┬──────────────┐
+             │              │              │              │
+   ┌─────────▼────────┐ ┌──▼──────────┐ ┌─▼────────────┐ │
+   │ Firebase Auth    │ │  Firestore  │ │   Storage    │ │
+   │ (GitHub OAuth)   │ │  (NoSQL DB) │ │ (Logs/Files) │ │
+   └──────────────────┘ └─────────────┘ └──────────────┘ │
+                                                          │
+   ┌──────────────────────────────────────────────────────▼──┐
+   │           Firebase Cloud Functions                      │
+   │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
+   │  │   Webhook    │  │ Scheduled    │  │ Firestore    │ │
+   │  │   Handler    │  │   Sync       │  │  Triggers    │ │
+   │  └──────────────┘  └──────────────┘  └──────────────┘ │
+   └────────────────────────────┬────────────────────────────┘
+                                │
+   ┌────────────────────────────▼────────────────────────────┐
+   │  Optional: Express Server (Your Linux Server)           │
+   │  - GitHub Webhook Receiver                              │
+   │  - Background Jobs (Bull Queue)                         │
+   │  - Third-party Integrations (Slack, Discord)            │
+   └─────────────────────────────────────────────────────────┘
+```
+
+### Deployment Options
+
+**Option 1: Full Firebase (Recommended for MVP)**
+- Frontend: Firebase Hosting
+- Backend: Cloud Functions only
+- No separate server needed
+- Auto-scaling
+- Pay-per-use
+
+**Option 2: Hybrid (Best for Full Features)**
+- Frontend: Firebase Hosting
+- Auth + Database: Firebase
+- Webhook Server: Your Linux server (Express)
+- Background Jobs: Your server (Bull + Redis)
+- More control, better for complex workflows
+
+**Option 3: Firebase + Docker (Your Linux Server)**
+- Frontend: Nginx on your server
+- Backend: Express + Firebase Admin SDK
+- Database: Firestore (cloud)
+- Auth: Firebase Auth (cloud)
+- Storage: Firebase Storage (cloud)
+- Deploy with Docker Compose
+
+---
+
+## 📦 Tech Stack Summary (Firebase Edition)
+
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | |
+| Framework | React 18 + TypeScript |
+| Build Tool | Vite |
+| UI Library | Tailwind CSS + shadcn/ui |
+| State Management | Redux Toolkit + React Query |
+| Charts | Recharts + D3.js |
+| Animations | Framer Motion |
+| **Backend** | |
+| Runtime | Node.js 20+ (minimal) |
+| Framework | Express.js (webhook only) |
+| Serverless | Firebase Cloud Functions |
+| **Database & Auth** | |
+| Database | Cloud Firestore (NoSQL) |
+| Authentication | Firebase Authentication |
+| Storage | Firebase Storage |
+| Real-time | Firestore Real-time Listeners |
+| **Optional** | |
+| Cache | Redis (if using your server) |
+| Queue | Bull (if using your server) |
+| **External APIs** | |
+| Version Control | GitHub API |
+| Notifications | Slack API, Discord API |
+| **Deployment** | |
+| Hosting | Firebase Hosting |
+| Functions | Cloud Functions |
+| CI/CD | GitHub Actions |
+| Monitoring | Firebase Analytics + Cloud Logging |
+
+---
+
+## 🎯 Why Firebase for This Project?
+
+### Advantages:
+1. **No Database Management** - Firestore handles scaling, backups, replication
+2. **Built-in Authentication** - GitHub OAuth out of the box
+3. **Real-time by Default** - Firestore listeners for live updates
+4. **Free Tier Generous** - Perfect for portfolio/MVP
+5. **Fast Development** - Less backend code to write
+6. **Auto-scaling** - Handles traffic spikes automatically
+7. **Global CDN** - Firebase Hosting is fast worldwide
+8. **Security Rules** - Declarative security at database level
+
+### Trade-offs:
+1. **Vendor Lock-in** - Harder to migrate off Firebase later
+2. **NoSQL Limitations** - Complex queries need workarounds
+3. **Cost at Scale** - Can get expensive with high reads/writes
+4. **Less Control** - Can't optimize as much as custom backend
+
+### Perfect For:
+- ✅ Portfolio projects
+- ✅ MVPs and prototypes
+- ✅ Real-time applications
+- ✅ Apps with <10k users
+- ✅ When you want to focus on frontend
+
+This Firebase architecture supports all 120 features while requiring minimal backend code!
